@@ -4,7 +4,14 @@ from utils_credit import parse_credit_pdf
 from utils_bank import parse_bank_pdf
 
 st.set_page_config(page_title="רמזור דף חדש – הדרך הנכונה לצאת מהחובות", layout="wide")
-st.markdown("<style>body, div, p, label, input, .stTextInput, .stNumberInput {direction: rtl; text-align: right;}</style>", unsafe_allow_html=True)
+st.markdown("""
+<style>
+body, .stTextInput, .stNumberInput, .stSelectbox, .stRadio, .stFileUploader, .stButton, .stMarkdown, .stDataFrameBlock, .css-1offfwp, .stDataFrame, .stTable {
+    direction: rtl;
+    text-align: right;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.title("🚦 רמזור דף חדש")
 st.subheader("הדרך הנכונה לצאת מהחובות – העלה מסמכים וענה על מספר שאלות")
@@ -13,8 +20,13 @@ st.subheader("הדרך הנכונה לצאת מהחובות – העלה מסמ�
 st.markdown("### 📝 שאלון ראשוני")
 event = st.text_input("האם קרה משהו חריג שבגללו פנית?")
 alt_funding = st.text_input("האם יש מקורות מימון נוספים שנבדקו?")
+
 income = st.number_input("מה סך ההכנסות החודשיות (נטו) של שני בני הזוג?", min_value=0, step=500)
+st.slider("בחר סכום הכנסה בקו עליון", 0, 30000, income, step=500)
+
 expenses = st.number_input("מה סך ההוצאות הקבועות החודשיות?", min_value=0, step=500)
+st.slider("בחר סכום הוצאה בקו עליון", 0, 30000, expenses, step=500)
+
 other_loans = st.text_input("האם קיימות הלוואות נוספות? פרט/י והוסף/י גובה החזר חודשי")
 is_balanced = st.radio("האם אתם מאוזנים כלכלית?", ["כן", "לא"])
 is_likely_to_change = st.radio("האם צפוי שינוי כלשהו במצב בשנה הקרובה?", ["כן", "לא"])
@@ -54,13 +66,13 @@ if credit_file and bank_file and income:
             if not credit_df.empty:
                 st.dataframe(credit_df)
             else:
-                st.info("לא נמצאו נתונים בדוח האשראי")
+                st.warning("⚠️ לא נמצאו נתונים בדוח האשראי. ייתכן שהפורמט לא זוהה כראוי.")
 
         with st.expander('🏦 תנועות עו\"ש'):
             if not bank_df.empty:
                 st.dataframe(bank_df)
             else:
-                st.info("לא נמצאו תנועות עו\"ש בדוח")
+                st.warning("⚠️ לא נמצאו תנועות עו\"ש. ודא שהקובץ בפורמט מתאים (למשל: בנק הפועלים)")
 
 else:
     st.info("יש למלא את כל השדות ולהעלות את שני הקבצים")
