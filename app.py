@@ -45,7 +45,7 @@ if credit_file and bank_file and income:
 
         st.success("הקבצים עובדו בהצלחה")
         st.markdown(f"### 🧾 סיכום כלכלי")
-        st.write(f"**סה"כ חוב כולל:** {total_debt:,.0f} ש"ח")
+        st.write(f"**סה\"כ חוב כולל:** {total_debt:,.0f} ש\"ח")
         st.write(f"**יחס חוב להכנסה שנתית:** {debt_ratio:.2f}")
         st.write(f"**רמת סיכון לפי רמזור:** {color}")
 
