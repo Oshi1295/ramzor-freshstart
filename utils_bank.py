@@ -1,32 +1,78 @@
-import fitz  # PyMuPDF
+import streamlit as st
 import pandas as pd
-import re
+from utils_credit import parse_credit_pdf
+from utils_bank import parse_bank_pdf
 
-def parse_bank_pdf(uploaded_file):
-    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-    text = "\n".join(page.get_text() for page in doc)
+st.set_page_config(page_title="רמזור דף חדש – הדרך הנכונה לצאת מהחובות", layout="wide")
+st.markdown("""
+<style>
+body, .stTextInput, .stNumberInput, .stSelectbox, .stRadio, .stFileUploader, .stButton, .stMarkdown, .stDataFrameBlock, .css-1offfwp, .stDataFrame, .stTable {
+    direction: rtl;
+    text-align: right;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    # תבנית לשליפת תאריך + תיאור + סכום
-    pattern = r'(\d{2}/\d{2}/\d{4}).*?([\u0590-\u05FF\s"\'()]+)([\-–]?\d[\d,\.]*₪)'
-    matches = re.findall(pattern, text)
+st.title("🚦 רמזור דף חדש")
+st.subheader("הדרך הנכונה לצאת מהחובות – העלה מסמכים וענה על מספר שאלות")
 
-    rows = []
-    for date, desc, amount in matches:
-        try:
-            clean_amount = float(re.sub(r'[₪,]', '', amount))
-            signed = -clean_amount if '-' in amount or '–' in amount else clean_amount
-            rows.append({"תאריך": date, "תיאור": desc.strip(), "signed_amount": signed})
-        except:
-            continue
+# --- קלט: שאלון רמזור ---
+st.markdown("### 📝 שאלון ראשוני")
+event = st.text_input("האם קרה משהו חריג שבגללו פנית?")
+alt_funding = st.text_input("האם יש מקורות מימון נוספים שנבדקו?")
 
-    df = pd.DataFrame(rows)
+income = st.number_input("מה סך ההכנסות החודשיות (נטו) של שני בני הזוג?", min_value=0, step=500)
+st.slider("בחר סכום הכנסה בקו עליון", 0, 30000, income, step=500)
 
-    if 'signed_amount' not in df.columns or df.empty:
-        return pd.DataFrame(), {"total_income": 0, "total_expense": 0, "net_flow": 0}
+expenses = st.number_input("מה סך ההוצאות הקבועות החודשיות?", min_value=0, step=500)
+st.slider("בחר סכום הוצאה בקו עליון", 0, 30000, expenses, step=500)
 
-    summary = {
-        "total_income": df[df.signed_amount > 0]["signed_amount"].sum(),
-        "total_expense": df[df.signed_amount < 0]["signed_amount"].sum(),
-        "net_flow": df["signed_amount"].sum()
-    }
-    return df, summary
+other_loans = st.text_input("האם קיימות הלוואות נוספות? פרט/י והוסף/י גובה החזר חודשי")
+is_balanced = st.radio("האם אתם מאוזנים כלכלית?", ["כן", "לא"])
+is_likely_to_change = st.radio("האם צפוי שינוי כלשהו במצב בשנה הקרובה?", ["כן", "לא"])
+
+st.markdown("---")
+
+# --- העלאת קבצים ---
+st.markdown("### 📤 העלאת קבצים")
+credit_file = st.file_uploader('העלה את דוח נתוני האשראי (PDF)', type="pdf")
+bank_file = st.file_uploader('העלה את דוח העו"ש (PDF)', type="pdf")
+
+# --- עיבוד ---
+if credit_file and bank_file and income:
+    with st.spinner("📊 מעבד נתונים..."):
+        credit_df, credit_summary = parse_credit_pdf(credit_file)
+        bank_df, bank_summary = parse_bank_pdf(bank_file)
+
+        # חישוב יחס חוב/הכנסה שנתי
+        total_debt = credit_summary['total_debt']
+        annual_income = income * 12
+        debt_ratio = total_debt / annual_income if annual_income > 0 else 0
+
+        if debt_ratio < 1:
+            color = "🟢 ירוק"
+        elif debt_ratio < 2:
+            color = "🟡 צהוב"
+        else:
+            color = "🔴 אדום"
+
+        st.success("הקבצים עובדו בהצלחה")
+        st.markdown("### 🧾 סיכום כלכלי")
+        st.write(f"**סה\"כ חוב כולל:** {total_debt:,.0f} ש"ח")
+        st.write(f"**יחס חוב להכנסה שנתית:** {debt_ratio:.2f}")
+        st.write(f"**רמת סיכון לפי רמזור:** {color}")
+
+        with st.expander("📄 פרטי דוח אשראי"):
+            if not credit_df.empty:
+                st.dataframe(credit_df)
+            else:
+                st.warning("⚠️ לא נמצאו נתונים בדוח האשראי. ייתכן שהפורמט לא זוהה כראוי.")
+
+        with st.expander('🏦 תנועות עו"ש'):
+            if not bank_df.empty:
+                st.dataframe(bank_df)
+            else:
+                st.warning("⚠️ לא נמצאו תנועות עו\"ש. ודא שהקובץ בפורמט מתאים (למשל: בנק הפועלים)")
+
+else:
+    st.info("יש למלא את כל השדות ולהעלות את שני הקבצים")
