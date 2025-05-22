@@ -23,7 +23,7 @@ st.markdown("---")
 # --- העלאת קבצים ---
 st.markdown("### 📤 העלאת קבצים")
 credit_file = st.file_uploader("העלה את דוח נתוני האשראי (PDF)", type="pdf")
-bank_file = st.file_uploader("העלה את דוח העו"ש (PDF)", type="pdf")
+bank_file = st.file_uploader('העלה את דוח העו"ש (PDF)', type="pdf")
 
 # --- עיבוד ---
 if credit_file and bank_file and income:
