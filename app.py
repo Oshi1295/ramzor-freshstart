@@ -52,7 +52,7 @@ if credit_file and bank_file and income:
         with st.expander("📄 פרטי דוח אשראי"):
             st.dataframe(credit_df)
 
-        with st.expander("🏦 תנועות עו"ש"):
+        with st.expander('🏦 תנועות עו"ש'):
             st.dataframe(bank_df)
 
 else:
